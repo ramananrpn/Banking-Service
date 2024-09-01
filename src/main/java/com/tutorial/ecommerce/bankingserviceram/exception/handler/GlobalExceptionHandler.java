@@ -1,6 +1,7 @@
 package com.tutorial.ecommerce.bankingserviceram.exception.handler;
 
 import com.auth0.jwt.exceptions.JWTVerificationException;
+import com.auth0.jwt.exceptions.TokenExpiredException;
 import com.tutorial.ecommerce.bankingserviceram.dto.ErrorResponse;
 import com.tutorial.ecommerce.bankingserviceram.exception.AccountNotFoundException;
 import com.tutorial.ecommerce.bankingserviceram.exception.BadRequestException;
@@ -15,6 +16,7 @@ import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
+import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
@@ -104,20 +106,42 @@ public class GlobalExceptionHandler {
         return new ResponseEntity<>(errorResponse, HttpStatus.BAD_REQUEST);
     }
 
+    // AccountNotFoundException
     @ExceptionHandler(AccountNotFoundException.class)
-    public ResponseEntity<Object> handleAccountNotFoundException(AccountNotFoundException ex) {
-        return new ResponseEntity<>(new ErrorResponseCustom("Account not found", ex.getMessage()), HttpStatus.NOT_FOUND);
-    }
-
-    @ExceptionHandler(InsufficientBalanceException.class)
-    public ResponseEntity<Object> handleInsufficientBalanceException(InsufficientBalanceException ex) {
-        return new ResponseEntity<>(new ErrorResponseCustom("Insufficient balance", ex.getMessage()), HttpStatus.BAD_REQUEST);
+    public ResponseEntity<ErrorResponse> handleAccountNotFoundException(AccountNotFoundException ex) {
+        log.error("Account not found", ex);
+        ErrorResponse errorResponse = new ErrorResponse(HttpStatus.NOT_FOUND.value(), ex.getMessage());
+        return new ResponseEntity<>(errorResponse, HttpStatus.NOT_FOUND);
     }
 
     @ExceptionHandler(Exception.class)
     public ResponseEntity<Object> handleGeneralException(Exception ex) {
         log.error("Internal server error", ex);
         return new ResponseEntity<>(new ErrorResponseCustom("Error", ex.getMessage()), HttpStatus.INTERNAL_SERVER_ERROR);
+    }
+
+    // TokenExpiredException
+    @ExceptionHandler(TokenExpiredException.class)
+    public ResponseEntity<ErrorResponse> handleTokenExpiredException(TokenExpiredException ex) {
+        log.error("Token expired", ex);
+        ErrorResponse errorResponse = new ErrorResponse(HttpStatus.UNAUTHORIZED.value(), "Token expired");
+        return new ResponseEntity<>(errorResponse, HttpStatus.UNAUTHORIZED);
+    }
+
+    // InsufficientBalanceException
+    @ExceptionHandler(InsufficientBalanceException.class)
+    public ResponseEntity<ErrorResponse> handleInsufficientBalanceException(InsufficientBalanceException ex) {
+        log.error("Insufficient balance", ex);
+        ErrorResponse errorResponse = new ErrorResponse(HttpStatus.BAD_REQUEST.value(), ex.getMessage());
+        return new ResponseEntity<>(errorResponse, HttpStatus.BAD_REQUEST);
+    }
+
+    // MissingServletRequestParameterException
+    @ExceptionHandler(MissingServletRequestParameterException.class)
+    public ResponseEntity<ErrorResponse> handleMissingServletRequestParameterException(MissingServletRequestParameterException ex) {
+        log.error("Missing request parameter", ex);
+        ErrorResponse errorResponse = new ErrorResponse(HttpStatus.BAD_REQUEST.value(), ex.getMessage());
+        return new ResponseEntity<>(errorResponse, HttpStatus.BAD_REQUEST);
     }
 
     static class ErrorResponseCustom {
@@ -128,7 +152,5 @@ public class GlobalExceptionHandler {
             this.message = message;
             this.details = details;
         }
-
-        // Getters and Setters
     }
 }
