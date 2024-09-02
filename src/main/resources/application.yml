@@ -1,0 +1,24 @@
+spring:
+  cloud:
+    gateway:
+      routes:
+        - id: banking-service
+          uri: lb://BANKING-SERVICE
+          predicates:
+            - Path=/transactions/**, /accounts/**
+          filters:
+            - name: CircuitBreaker
+              args:
+                name: myCircuitBreaker
+                fallbackUri: forward:/fallback
+            - name: RequestRateLimiter
+              args:
+                rate-limiter: #{@defaultRateLimiter}
+                key-resolver: "#{@ipKeyResolver}"
+resilience4j:
+  ratelimiter:
+    instances:
+      default:
+        limitForPeriod: 10
+        limitRefreshPeriod: 5s
+        timeoutDuration: 0s
